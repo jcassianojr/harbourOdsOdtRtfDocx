@@ -1,6 +1,7 @@
 /*
  * ODS writer Class - Pure Harbour 
  * Baseado na filosofia da XLSX Class para gerar OpenDocument Spreadsheets nativos
+ * Modificada para incluir a interface de compatibilidade com métodos de estilo da XLSX Class
  */
 
 #require "hbmzip"
@@ -16,27 +17,67 @@ CLASS WorkBookODS
    DATA aWorkSheetNames PROTECTED  
    DATA aWorkSheetObjects PROTECTED 
    
+   // --- Arrays de Compatibilidade de Estilos ---
+   DATA aFonts PROTECTED
+   DATA aStyles PROTECTED
+   DATA aFills PROTECTED
+   DATA aBorders PROTECTED
+   DATA aNumFormats PROTECTED
+   
    METHOD New( cName )
    METHOD WorkSheet( cName )
    METHOD GetTempDir()
    METHOD Save()
+   
+   // --- Métodos de Compatibilidade (Stubs) ---
+   METHOD NewFormat( cFormat )
+   METHOD NewFillPattern( nFillPattern, cFG, cBG )
+   METHOD NewFont( cFont, nFontSize, lBold, lItalic, lUnderline, lStrike, cRGB )
+   METHOD NewBorder( nTL, nTR, nTT, nTB, nTD, cCL, cCR, cCT, cCB, cCD  )
+   METHOD NewStyle( nFont, nBorder, nFill, nVA, nHA, nFormat, nRotation, lWrap )
 ENDCLASS
 
 METHOD New( cName ) CLASS WorkBookODS
    LOCAL cDir := CurDir()
    
-   // Formata o caminho do arquivo
    ::cFilePath := iif( FilePath(cName) == "", DiskName() + hb_OSDriveSeparator() + hb_PS() + cDir + hb_PS() , FilePath(cName) )
    ::cName := iif( At(::cFilePath, cName) > 0, SubStr(cName, Len(::cFilePath) + 1), cName )
    
    ::aWorkSheetNames := {}  
    ::aWorkSheetObjects := {}
    
-   // Prepara diretorio temporario
+   ::aFonts := {}
+   ::aStyles := {}
+   ::aFills := {}
+   ::aBorders := {}
+   ::aNumFormats := {}
+   
    ::cTempDir := hb_DirSepToOS( hb_DirTemp() + "OdsTemp_" + hb_ValToStr(hb_RandomInt(1000, 9999)) )
    hb_DirRemoveAll( ::cTempDir )
    MakeDir( ::cTempDir )
 Return Self
+
+// --- Implementação dos Stubs de Estilo (Retornam IDs falsos para compatibilidade) ---
+METHOD NewFormat( cFormat ) CLASS WorkBookODS
+   AAdd( ::aNumFormats, cFormat )
+Return Len( ::aNumFormats )
+
+METHOD NewFillPattern( nFillPattern, cFG, cBG ) CLASS WorkBookODS
+   AAdd( ::aFills, {nFillPattern, cFG, cBG} )
+Return Len( ::aFills )
+
+METHOD NewFont( cFont, nFontSize, lBold, lItalic, lUnderline, lStrike, cRGB ) CLASS WorkBookODS
+   AAdd( ::aFonts, {cFont, nFontSize, lBold, lItalic, lUnderline, lStrike, cRGB} )
+Return Len( ::aFonts )
+
+METHOD NewBorder( nTL, nTR, nTT, nTB, nTD, cCL, cCR, cCT, cCB, cCD ) CLASS WorkBookODS
+   AAdd( ::aBorders, {nTL, nTR, nTT, nTB, nTD, cCL, cCR, cCT, cCB, cCD} )
+Return Len( ::aBorders )
+
+METHOD NewStyle( nFont, nBorder, nFill, nVA, nHA, nFormat, nRotation, lWrap ) CLASS WorkBookODS
+   AAdd( ::aStyles, {nFont, nBorder, nFill, nVA, nHA, nFormat, nRotation, lWrap} )
+Return Len( ::aStyles )
+
 
 METHOD WorkSheet( cName ) CLASS WorkBookODS
    LOCAL oWorkSheet, nPos 
@@ -60,11 +101,9 @@ METHOD Save() CLASS WorkBookODS
 
    MakeDir( ::cTempDir + cSep + "META-INF" )
 
-   // 1. Mimetype (DEVE SER TEXTO PURO)
    cMime := "application/vnd.oasis.opendocument.spreadsheet"
    hb_MemoWrit( ::cTempDir + cSep + "mimetype", cMime )
 
-   // 2. manifest.xml
    cManifest := '<?xml version="1.0" encoding="UTF-8"?>' + hb_osNewLine() + ;
                 '<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">' + hb_osNewLine() + ;
                 ' <manifest:file-entry manifest:full-path="/" manifest:media-type="application/vnd.oasis.opendocument.spreadsheet"/>' + hb_osNewLine() + ;
@@ -72,7 +111,6 @@ METHOD Save() CLASS WorkBookODS
                 '</manifest:manifest>'
    hb_MemoWrit( ::cTempDir + cSep + "META-INF" + cSep + "manifest.xml", cManifest )
 
-   // 3. content.xml (Onde ficam todas as planilhas e dados)
    cContent := '<?xml version="1.0" encoding="UTF-8"?>' + hb_osNewLine() + ;
                '<office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" ' + ;
                'xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" ' + ;
@@ -80,7 +118,6 @@ METHOD Save() CLASS WorkBookODS
                ' <office:body>' + hb_osNewLine() + ;
                '  <office:spreadsheet>' + hb_osNewLine()
 
-   // Varre todas as WorkSheets criadas
    FOR nI := 1 TO Len( ::aWorkSheetNames )
       cContent += '   <table:table table:name="' + ::aWorkSheetNames[nI] + '">' + hb_osNewLine()
       
@@ -101,7 +138,6 @@ METHOD Save() CLASS WorkBookODS
                ELSEIF ValType( eValor ) == "L"
                   cContent += '     <table:table-cell office:value-type="boolean" office:boolean-value="' + iif(eValor, 'true', 'false') + '"><text:p>' + iif(eValor, 'VERDADEIRO', 'FALSO') + '</text:p></table:table-cell>' + hb_osNewLine()
                ELSE
-                  // String format
                   eValor := StrTran( hb_ValToStr(eValor), "&", "&amp;" )
                   eValor := StrTran( eValor, "<", "&lt;" )
                   eValor := StrTran( eValor, ">", "&gt;" )
@@ -120,19 +156,16 @@ METHOD Save() CLASS WorkBookODS
                
    hb_MemoWrit( ::cTempDir + cSep + "content.xml", cContent )
 
-   // 4. Compactação
    IF File( cFinalZip ); FErase( cFinalZip ); ENDIF
    
    hZip := hb_zipOpen( cFinalZip )
    IF !Empty( hZip )
-      // REQUISITO ODS: mimetype não pode ser compactado (Nível 0)
       hb_zipStoreFile( hZip, ::cTempDir + cSep + "mimetype", "mimetype", 0, .T. )
       hb_zipStoreFile( hZip, ::cTempDir + cSep + "content.xml", "content.xml", 8, .T. )
       hb_zipStoreFile( hZip, ::cTempDir + cSep + "META-INF" + cSep + "manifest.xml", "META-INF/manifest.xml", 8, .T. )
       hb_zipClose( hZip )
    ENDIF
 
-   // Limpeza
    hb_DirRemoveAll( ::cTempDir )
 Return Self
 
@@ -142,23 +175,47 @@ CLASS WorkSheetODS
    DATA oParent
    DATA nMaxRow PROTECTED
    DATA nMaxCol PROTECTED
-   DATA aData   // Matriz de dados
+   DATA aData   
+   DATA aRowsDetail PROTECTED
+   
+   // --- Propriedades de Compatibilidade ---
+   DATA paperSize INIT 9
+   DATA lLandscape INIT .F.
+   DATA leftMargin INIT 0.5
+   DATA rightMargin INIT 0.5
+   DATA topMargin INIT 0.5
+   DATA bottomMargin INIT 0.5
    
    METHOD New( cName )
-   METHOD Cell( uAddr, xValue )
+   METHOD Cell( uAddr, xValue, nStyle )
+   METHOD RowDetail( nRow, nHeight, nStyle, lHide )
 ENDCLASS
 
 METHOD New( cName ) CLASS WorkSheetODS
    ::cName := cName
    ::aData := {}
+   ::aRowsDetail := {}
    ::nMaxRow := 0
    ::nMaxCol := 0
 Return Self
 
-METHOD Cell( uAddr, xValue ) CLASS WorkSheetODS
+// --- Método de Compatibilidade para detalhes de linha ---
+METHOD RowDetail( nRow, nHeight, nStyle, lHide ) CLASS WorkSheetODS
+   LOCAL nI
+   IF hb_IsNumeric( nRow )
+      IF Len( ::aRowsDetail ) < nRow
+         FOR nI := Len( ::aRowsDetail ) + 1 TO nRow
+            AAdd( ::aRowsDetail, { 0, 0, .F. } )
+         NEXT
+      ENDIF
+      ::aRowsDetail[nRow] := { iif(hb_IsNil(nHeight),0,nHeight), iif(hb_IsNil(nStyle),0,nStyle), iif(hb_IsNil(lHide),.F.,lHide) }
+   ENDIF
+RETURN Self
+
+// O nStyle foi adicionado na assinatura por compatibilidade
+METHOD Cell( uAddr, xValue, nStyle ) CLASS WorkSheetODS
    LOCAL nRow := 0, nCol := 0, nI
    
-   // Converte endereço "A1" para linha e coluna nativamente
    IF ValType( uAddr ) == "A"
       nRow := uAddr[1]
       nCol := uAddr[2]
@@ -169,14 +226,12 @@ METHOD Cell( uAddr, xValue ) CLASS WorkSheetODS
    ::nMaxCol := iif( nCol > ::nMaxCol, nCol, ::nMaxCol )
    ::nMaxRow := iif( nRow > ::nMaxRow, nRow, ::nMaxRow )
 
-   // Ajusta o tamanho da matriz verticalmente
    IF Len( ::aData ) < nRow
       FOR nI := Len( ::aData ) + 1 TO nRow 
          AAdd( ::aData, {} )
       NEXT
    ENDIF
 
-   // Ajusta o tamanho da matriz horizontalmente para a linha atual
    IF Len( ::aData[nRow] ) < nCol
       FOR nI := Len( ::aData[nRow] ) + 1 TO nCol
          AAdd( ::aData[nRow], NIL )
@@ -190,7 +245,6 @@ METHOD Cell( uAddr, xValue ) CLASS WorkSheetODS
 Return ::aData[nRow, nCol]
 
 
-// Função auxiliar para evitar necessidade de #pragma BEGINDUMP em C
 STATIC FUNCTION OdsCellRC( cAddr, nRow, nCol )
    LOCAL nI := 1, nLen := Len( cAddr ), cChar
    LOCAL nTempCol := 0
