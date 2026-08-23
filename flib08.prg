@@ -1111,5 +1111,77 @@ oPrinter:endDoc()
 oPrinter:destroy()
 Return (.t.)
 
+*+--------------------------------------------------------------------
+*+
+*+
+*+
+*+    Function IsImpressora()
+*+
+*+
+*+
+*+--------------------------------------------------------------------
+*+
+*+
+*+
+function IsImpressora(QuePrinter)
+LOCAL nStatus
+cERRO:=''
+nStatus := PrintStat(QuePrinter)
+if nStatus < 1 
+   cERRO += "OK"
+elseif nStatus = 1 
+   cERRO += "Impressora Pausada"
+elseif nStatus = 2 
+   cERRO += "Impressora com Erro"
+elseif nStatus = 4 
+   cERRO += "Impressora Deletando"
+elseif nStatus = 8 
+   cERRO += "Impressora em Modo Bandeja"
+elseif nStatus = 16 
+   cERRO += "Impressora Sem Papel"
+elseif nStatus = 32 
+   cERRO += "Impressora em Modo Manual"
+elseif nStatus = 64 
+   cERRO += "Impressora com Problema no Papel"
+elseif nStatus = 128 
+   cERRO += "Impressora OffLine"
+elseif nStatus = 256 
+   cERRO += "Impressora com IO Ativo"
+elseif nStatus = 512 
+   cERRO += "Impressora Ocupada"
+elseif nStatus = 1024 
+   cERRO += "Impressora Imprimindo"
+elseif nStatus = 2048 
+   cERRO += "Impressora Memoria Lotada"
+elseif nStatus = 4096 
+   cERRO += "Impressora Nao Instalada"
+elseif nStatus = 8192 
+   cERRO += "Impressora Aguardando"
+elseif nStatus = 16384 
+   cERRO += "Impressora Processando"
+elseif nStatus = 32768 
+   cERRO += "Impressora Inicializando"
+elseif nStatus = 65536 
+   cERRO += "Impressora em Atencao"
+elseif nStatus = 131072 
+   cERRO += "Impressora Toner Baixo"
+elseif nStatus = 262144 
+   cERRO += "Impressora Sem Toner"
+elseif nStatus = 524288 
+   cERRO += "Impressora PAGE_PUNT"
+elseif nStatus = 1048576 
+   cERRO += "Impressora Intervencao do Usuario"
+elseif nStatus = 2097152 
+   cERRO += "Impressora Sem Memoria"
+elseif nStatus = 4194304 
+   cERRO += "Impressora Tampa Aberta"
+elseif nStatus = 8388608 
+   cERRO += "Impressora Servidor Desconhecido"
+elseif nStatus = 16777217 
+   cERRO += "Impressora POWER_SAVE"
+endif
+return (nil)
+
+
 *+ EOF: flib08.prg
 *+
