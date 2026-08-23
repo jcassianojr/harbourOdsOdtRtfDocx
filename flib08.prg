@@ -93,16 +93,12 @@ if nTIPSPO = 0
       oPCAO(10,41," Impressora w&Indows RAW          ",73)  //12
       oPCAO(11,41," C&OM1                            ",79)  //13
       oPCAO(12,41," CO&M2                            ",77)  //14
-      oPCAO(13,41,"                                  ",)  //15 //oPCAO( 13, 41, " &Email                           ", 69 )  //15
+      oPCAO(13,41," &DOCX(Word doc)                  ",77)  //15 
       oPCAO(14,41," Re&dicionar Portas               ",68)  //16
       IF lZEBRA
          oPCAO(15,41," Preview &Zebra pdf                ",90)  //17
       ENDIF
       nTIPSPO := menu(,0)
-      if nTIPSPO = 15
-         ALERTX("Opcao Desativada")
-         loop
-      endif
       if nTIPSPO = 16
          nPORTA   := 1
          cCAMINHO := "\\server\printer"+space(30)
@@ -194,7 +190,7 @@ if nTIPSPO = 2 .or. nTIPSPO = 3 .or. nTIPSPO = 4
       endif
    enddo
 endif
-if (nTIPSPO > 5 .and. nTIPSPO < 12) .OR. nTIPSPO = 17   //TXT OEM TXT ANSI HTML RTF PDF ZEBRA_17
+if (nTIPSPO > 5 .and. nTIPSPO < 12) .OR. nTIPSPO = 15 .OR. nTIPSPO = 17   //TXT OEM TXT ANSI HTML RTF PDF ZEBRA_17
    //cARQSPO := "c:\temp\nome000" + space( 20 )
    //cARQUIVO=WIN_GETSAVEFILENAME(        , "Exportar", HB_CWD(),"txt"   , "*.txt" , 1            ,               , cARQUIVO)
    cARQSPO := STRTRAN(TMPFILE("TXT"),".TXT","")+SPACE(30)   //"c:\temp\nome000" + space( 20 )
@@ -287,6 +283,11 @@ endif
 if nTIPSPO = 11    
    cFILE := printtoodt(cARQSPO) //odt
 endif
+
+if nTIPSPO = 15    
+   cFILE := printtodocx(cARQSPO) // docx nativo via docclass
+endif
+
 if nTIPSPO = 12   //print raw
    FILEtoprwin(cARQSPO,1)
 endif
@@ -303,7 +304,7 @@ if nTIPSPO = 17
    cFILE := filezebrapdf(cARQSPO)
 endif
 
-if nTIPSPO = 6 .or. nTIPSPO = 7 .or. nTIPSPO = 8 .or. nTIPSPO = 9 .or. nTIPSPO = 10 .or. nTIPSPO = 17
+if nTIPSPO = 6 .or. nTIPSPO = 7 .or. nTIPSPO = 8 .or. nTIPSPO = 9 .or. nTIPSPO = 10 .or. nTIPSPO = 17 .or. nTIPSPO = 15
    cTELA := savescreen(6,0,17,80)
    CLSBOX(6,0,17,80)
    HB_dispbox(6,0,17,79,B_DOUBLE+" ")

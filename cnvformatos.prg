@@ -197,7 +197,47 @@ fclose(nHANDLE)
 fclose(nHANWRI)
 return cFILE
 
+*+--------------------------------------------------------------------
+*+    Function printtodocx()
+*+--------------------------------------------------------------------
+function printtodocx( cARQ, cFileToSave )
+   LOCAL cLinha, nFileHandle
+   LOCAL oDoc
 
+   IF !hb_FileExists( cARQ )
+      ALERTX( "Falta Arquivo " + cARQ )
+      RETURN ""
+   ENDIF
+
+   IF ValType( cFileToSave ) # "C"
+      cFileToSave := trocaext( cARQ, ".DOCX" )
+   ENDIF
+
+   oDoc := DocumentDOCX():New( cFileToSave )
+   oDoc:AddParagraph( "Relatório do Sistema" )
+
+   nFileHandle := hb_FOpen( cARQ )
+   
+   DO WHILE HB_FReadLine( nFileHandle, @cLinha ) == 0
+      cLinha := ParseEscapeToBBCode( cLinha ) 
+      IF cLinha == "##page##"
+         // Salto de página compatível com o DOCX que configuramos na classe
+         oDoc:AddParagraph( "[PAGE]" )
+      ELSE
+         cLinha := RANGEREM( Chr( 0 ), Chr( 09 ), cLinha )
+         cLinha := RANGEREM( Chr( 11 ), Chr( 12 ), cLinha )
+         cLinha := RANGEREM( Chr( 14 ), Chr( 31 ), cLinha )
+         cLinha := hb_OEMToANSI( cLinha )
+         
+         oDoc:AddParagraph( cLinha )
+      ENDIF
+   ENDDO
+
+   FClose( nFileHandle )
+   oDoc:Save()
+   
+   @ MaxRow(), 0 SAY "Gerado DOCX " + cFileToSave
+RETURN cFileToSave
 
 *+--------------------------------------------------------------------
 *+    Function printtoodt()
