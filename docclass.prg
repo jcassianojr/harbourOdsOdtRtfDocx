@@ -143,7 +143,7 @@ METHOD ParseBBCodeToXML( cLinha ) CLASS DocumentDOCX
             cResult += ::GenerateRun( SubStr( cLinha, 1, nPosIni - 1 ), lBold, lItalic, lUnder, cSize )
          ENDIF
 
-         nPosFim := At( "]", cLinha, nPosIni )
+         nPosFim := hb_At( "]", cLinha, nPosIni )
          IF nPosFim > 0
             cTag := SubStr( cLinha, nPosIni + 1, nPosFim - nPosIni - 1 )
             cCmd := Upper( cTag )

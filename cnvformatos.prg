@@ -338,7 +338,7 @@ FUNCTION ParseBBCodeToHTML( cLinha )
    nPosIni := At( "[", cResultado )
    
    WHILE nPosIni > 0
-      nPosFim := At( "]", cResultado, nPosIni )
+      nPosFim := hb_At( "]", cResultado, nPosIni )
       
       IF nPosFim > 0
          cTag := SubStr( cResultado, nPosIni + 1, nPosFim - nPosIni - 1 )
@@ -359,7 +359,7 @@ FUNCTION ParseBBCodeToHTML( cLinha )
          ENDIF
       ENDIF
       
-      nPosIni := At( "[", cResultado, nPosIni + 1 )
+      nPosIni := hb_At( "[", cResultado, nPosIni + 1 )
    ENDDO
    
    // 3. Fechamento das tags que usavam parametros

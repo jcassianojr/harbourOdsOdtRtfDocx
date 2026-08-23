@@ -1,0 +1,2 @@
+function TZEBRATOPDF()
+return .t.
