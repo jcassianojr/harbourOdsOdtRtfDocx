@@ -301,7 +301,9 @@ if lAPAGA .AND. (nTIPSPO = 1 .or. nTIPSPO = 7 .or. nTIPSPO = 8 .or. nTIPSPO = 9 
    //demais direto na porta
 endif
 if nTIPSPO = 17
-   cFILE := filezebrapdf(cARQSPO)
+   #ifdef USE_ZEBRA
+       cFILE := filezebrapdf(cARQSPO)
+   #endif
 endif
 
 if nTIPSPO = 6 .or. nTIPSPO = 7 .or. nTIPSPO = 8 .or. nTIPSPO = 9 .or. nTIPSPO = 10 .or. nTIPSPO = 17 .or. nTIPSPO = 15
