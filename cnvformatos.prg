@@ -314,6 +314,8 @@ FUNCTION ParseBBCodeToHTML( cLinha )
    LOCAL cResultado := cLinha
    LOCAL nPosIni, nPosFim, cTag, cComando, cValor, nPosIgual
    
+   
+   
    // 1. Substituicoes Diretas (Estilos e Estrutura)
    cResultado := StrTran( cResultado, "[B]", "<b>" )
    cResultado := StrTran( cResultado, "[/B]", "</b>" )
@@ -376,6 +378,34 @@ RETURN cResultado
 *+--------------------------------------------------------------------
 FUNCTION ParseEscapeToBBCode( cLinha )
 
+         
+   cLinha := StrTran( cLinha, '#AQ', '[B]' )
+   cLinha := StrTran( cLinha, '#DQ', '[/B]' )
+   cLinha := StrTran( cLinha, '#AE', '[I]' )
+   cLinha := StrTran( cLinha, '#AC', '[SIZE=12]' )
+   cLinha := StrTran( cLinha, '#DC', '[SIZE=14]' )
+   cLinha := StrTran( cLinha, '#AI', '[I]' )
+   cLinha := StrTran( cLinha, '#DI', '[/I]' )
+   cLinha := StrTran( cLinha, '#AN', '[B]' )
+   cLinha := StrTran( cLinha, '#DN', '[/B]' )
+   cLinha := StrTran( cLinha, '#AX', '[SIZE=8]' )
+   cLinha := StrTran( cLinha, '#AD', '[SIZE=14]' )
+   cLinha := StrTran( cLinha, '#DXD', '[SIZE=12]' )
+   cLinha := StrTran( cLinha, '#AS', '[U]' )
+   cLinha := StrTran( cLinha, '#DS', '[/U]' )
+   cLinha := StrTran( cLinha, '#AEC', '[SIZE=14]' )
+   cLinha := StrTran( cLinha, '#DEC', '[SIZE=12]' )
+   cLinha := StrTran( cLinha, '#AIE', '[I][SIZE=14]' )
+   cLinha := StrTran( cLinha, '#DIE', '[/I][SIZE=12]' )
+   cLinha := StrTran( cLinha, '#AIC', '[U]' )
+   cLinha := StrTran( cLinha, '#DIC', '[/U]' )
+   cLinha := StrTran( cLinha, '#ACA', '[U]' )
+   cLinha := StrTran( cLinha, '#ACB', '[U]' )
+   cLinha := StrTran( cLinha, '#ACC', '[U]' )
+   cLinha := StrTran( cLinha, '#ACD', '[U]' )
+   cLinha := StrTran( cLinha, '#DCE', '[/U]' )       
+                   
+   
    // 1. Substitui as variaveis globais configuradas (Caso o sistema passe as macros direto)
    IF Type("cIMPNEG") == "C" .AND. !Empty(cIMPNEG)
       cLinha := StrTran( cLinha, cIMPNEG, "[B]" )
