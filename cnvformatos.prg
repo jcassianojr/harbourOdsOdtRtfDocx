@@ -372,41 +372,62 @@ FUNCTION ParseBBCodeToHTML( cLinha )
 RETURN cResultado
 
 
-*+--------------------------------------------------------------------
-*+    Function ParseEscapeToBBCode()
-*+    Traduz comandos binarios de impressora para tags [BBCode]
-*+--------------------------------------------------------------------
+/*
+FUNC tipoimp( texto )
+
+   aORI := { '#AQ', '#DQ', '#AE', '#AC', '#DC', ;
+      '#AI', '#DI', '#AN', '#DN', '#AX', ;
+      '#AD', '#DXD', '#AS', '#DS', '#AEC', ;
+      '#DEC', '#AIE', '#DIE', '#AIC', '#DIC', ;
+      '#ACA', '#ACB', '#ACC', '#ACD', '#DCE' }
+   aDES := { Chr( 27 ) + Chr( 71 ), Chr( 27 ) + Chr( 72 ), cIMPTIT, cIMPCOM, cIMPEXP, ;
+      Chr( 27 ) + Chr( 52 ), Chr( 27 ) + Chr( 53 ), cIMPNEG, cIMPNER, ;
+      Chr( 27 ) + Chr( 83 ) + Chr( 00 ), Chr( 27 ) + Chr( 83 ) + Chr( 01 ), Chr( 27 ) + Chr( 84 ), ;
+      Chr( 27 ) + Chr( 45 ) + Chr( 00 ), Chr( 27 ) + Chr( 45 ) + Chr( 01 ), Chr( 27 ) + Chr( 87 ) + Chr( 00 ), ;
+      Chr( 27 ) + Chr( 87 ) + Chr( 01 ), Chr( 27 ) + Chr( 52 ) + Chr( 27 ) + Chr( 87 ) + Chr( 01 ), ;
+      Chr( 27 ) + Chr( 53 ) + Chr( 27 ) + Chr( 87 ) + Chr( 00 ), Chr( 27 ) + Chr( 91 ) + Chr( 50 ) + Chr( 27 ) + Chr( 52 ), ;
+      Chr( 27 ) + Chr( 91 ) + Chr( 48 ) + Chr( 27 ) + Chr( 53 ), ;
+      Chr( 27 ) + Chr( 91 ) + Chr( 50 ), Chr( 27 ) + Chr( 91 ) + Chr( 51 ), Chr( 27 ) + Chr( 91 ) + Chr( 52 ), ;
+      Chr( 27 ) + Chr( 91 ) + Chr( 53 ), Chr( 27 ) + Chr( 91 ) + Chr( 48 ) }
+   texto := charconv( texto, aORI, aDES )
+   RETU texto
+*/
+
+
 FUNCTION ParseEscapeToBBCode( cLinha )
 
-         
-   cLinha := StrTran( cLinha, '#AQ', '[B]' )
-   cLinha := StrTran( cLinha, '#DQ', '[/B]' )
-   cLinha := StrTran( cLinha, '#AE', '[I]' )
-   cLinha := StrTran( cLinha, '#AC', '[SIZE=12]' )
-   cLinha := StrTran( cLinha, '#DC', '[SIZE=14]' )
-   cLinha := StrTran( cLinha, '#AI', '[I]' )
-   cLinha := StrTran( cLinha, '#DI', '[/I]' )
-   cLinha := StrTran( cLinha, '#AN', '[B]' )
-   cLinha := StrTran( cLinha, '#DN', '[/B]' )
-   cLinha := StrTran( cLinha, '#AX', '[SIZE=8]' )
-   cLinha := StrTran( cLinha, '#AD', '[SIZE=14]' )
-   cLinha := StrTran( cLinha, '#DXD', '[SIZE=12]' )
-   cLinha := StrTran( cLinha, '#AS', '[U]' )
-   cLinha := StrTran( cLinha, '#DS', '[/U]' )
-   cLinha := StrTran( cLinha, '#AEC', '[SIZE=14]' )
-   cLinha := StrTran( cLinha, '#DEC', '[SIZE=12]' )
-   cLinha := StrTran( cLinha, '#AIE', '[I][SIZE=14]' )
-   cLinha := StrTran( cLinha, '#DIE', '[/I][SIZE=12]' )
-   cLinha := StrTran( cLinha, '#AIC', '[U]' )
-   cLinha := StrTran( cLinha, '#DIC', '[/U]' )
-   cLinha := StrTran( cLinha, '#ACA', '[U]' )
-   cLinha := StrTran( cLinha, '#ACB', '[U]' )
-   cLinha := StrTran( cLinha, '#ACC', '[U]' )
-   cLinha := StrTran( cLinha, '#ACD', '[U]' )
-   cLinha := StrTran( cLinha, '#DCE', '[/U]' )       
-                   
-   
-   // 1. Substitui as variaveis globais configuradas (Caso o sistema passe as macros direto)
+   // ====================================================================
+   // 1. CONVERSÃO DAS TAGS DE ATALHO (#) PARA BBCODE CORRESPONDENTE
+   // ====================================================================
+   cLinha := StrTran( cLinha, '#AQ',  '[B]' )           // Negrito / Enfatizado ON
+   cLinha := StrTran( cLinha, '#DQ',  '[/B]' )          // Negrito / Enfatizado OFF
+   cLinha := StrTran( cLinha, '#AE',  '[SIZE=14]' )     // Título / Expandido
+   cLinha := StrTran( cLinha, '#AC',  '[SIZE=8]' )      // Comprimido ON
+   cLinha := StrTran( cLinha, '#DC',  '[SIZE=12]' )     // Normal (Desativa Comprimido/Expandido)
+   cLinha := StrTran( cLinha, '#AI',  '[I]' )           // Itálico ON
+   cLinha := StrTran( cLinha, '#DI',  '[/I]' )          // Itálico OFF
+   cLinha := StrTran( cLinha, '#AN',  '[B]' )           // Negrito ON
+   cLinha := StrTran( cLinha, '#DN',  '[/B]' )          // Negrito OFF
+   cLinha := StrTran( cLinha, '#AX',  '[SIZE=8]' )      // Índice / Subscrito ON
+   cLinha := StrTran( cLinha, '#AD',  '[SIZE=8]' )      // Sobrescrito ON
+   cLinha := StrTran( cLinha, '#DXD', '[SIZE=12]' )     // Cancela Sub/Sobrescrito
+   cLinha := StrTran( cLinha, '#AS',  '[U]' )           // Sublinhado ON
+   cLinha := StrTran( cLinha, '#DS',  '[/U]' )          // Sublinhado OFF
+   cLinha := StrTran( cLinha, '#AEC', '[SIZE=14]' )     // Expandido ON
+   cLinha := StrTran( cLinha, '#DEC', '[SIZE=12]' )     // Expandido OFF (Volta Normal 12pt)
+   cLinha := StrTran( cLinha, '#AIE', '[I][SIZE=14]' )  // Itálico + Expandido ON
+   cLinha := StrTran( cLinha, '#DIE', '[/I][SIZE=12]' ) // Itálico + Expandido OFF
+   cLinha := StrTran( cLinha, '#AIC', '[U]' )           // Estilo Especial ON
+   cLinha := StrTran( cLinha, '#DIC', '[/U]' )          // Estilo Especial OFF
+   cLinha := StrTran( cLinha, '#ACA', '[U]' )           // Atributo A ON
+   cLinha := StrTran( cLinha, '#ACB', '[U]' )           // Atributo B ON
+   cLinha := StrTran( cLinha, '#ACC', '[U]' )           // Atributo C ON
+   cLinha := StrTran( cLinha, '#ACD', '[U]' )           // Atributo D ON
+   cLinha := StrTran( cLinha, '#DCE', '[/U]' )          // Desativa Atributos
+
+   // ====================================================================
+   // 2. CONVERSÃO DE VARIÁVEIS GLOBAIS DE ESCAPE PARA BBCODE
+   // ====================================================================
    IF Type("cIMPNEG") == "C" .AND. !Empty(cIMPNEG)
       cLinha := StrTran( cLinha, cIMPNEG, "[B]" )
    ENDIF
@@ -424,14 +445,14 @@ FUNCTION ParseEscapeToBBCode( cLinha )
    ENDIF
 
    // ====================================================================
-   // 2. COMANDOS HARDCODED: EPSON / MATRICIAIS PADRAO
+   // 3. COMANDOS HARDCODED: EPSON / MATRICIAIS PADRÃO -> BBCODE
    // ====================================================================
    cLinha := StrTran( cLinha, Chr(27) + Chr(69), "[B]" )            // Negrito ON
    cLinha := StrTran( cLinha, Chr(27) + Chr(70), "[/B]" )           // Negrito OFF
    cLinha := StrTran( cLinha, Chr(27) + Chr(45) + Chr(00), "[U]" )  // Sublinhado ON
    cLinha := StrTran( cLinha, Chr(27) + Chr(45) + Chr(01), "[/U]" ) // Sublinhado OFF
-   cLinha := StrTran( cLinha, Chr(27) + Chr(52), "[I]" )            // Italico ON
-   cLinha := StrTran( cLinha, Chr(27) + Chr(53), "[/I]" )           // Italico OFF
+   cLinha := StrTran( cLinha, Chr(27) + Chr(52), "[I]" )            // Itálico ON
+   cLinha := StrTran( cLinha, Chr(27) + Chr(53), "[/I]" )           // Itálico OFF
    
    cLinha := StrTran( cLinha, Chr(14) + Chr(15), "[SIZE=12][B]" ) 
    cLinha := StrTran( cLinha, Chr(15), "[SIZE=8]" )                 // Comprimido ON
@@ -440,35 +461,31 @@ FUNCTION ParseEscapeToBBCode( cLinha )
    cLinha := StrTran( cLinha, Chr(20), "[SIZE=12]" )                // Expandido OFF
 
    // ====================================================================
-   // 3. COMANDOS HARDCODED: HP DESKJET
+   // 4. COMANDOS HARDCODED: HP DESKJET -> BBCODE
    // ====================================================================
-   cLinha := StrTran( cLinha, chr(27)+chr(40)+chr(115)+"16"+chr(72), "[SIZE=12]" ) // Normal
-   cLinha := StrTran( cLinha, chr(27)+chr(40)+chr(115)+"12"+chr(72), "[SIZE=8]" )  // Comprimido
-   cLinha := StrTran( cLinha, chr(27)+chr(40)+chr(115)+"23"+chr(72), "[SIZE=14]" ) // Expandido
-   cLinha := StrTran( cLinha, chr(27)+chr(40)+chr(115)+CHR(51)+chr(66), "[B]" )    // Negrito ON (Deskjet e Laser)
-   cLinha := StrTran( cLinha, chr(27)+chr(40)+chr(115)+CHR(45)+CHR(51)+chr(66), "[/B]" ) // Negrito OFF
+   cLinha := StrTran( cLinha, Chr(27)+Chr(40)+Chr(115)+"16"+Chr(72), "[SIZE=12]" ) // Normal
+   cLinha := StrTran( cLinha, Chr(27)+Chr(40)+Chr(115)+"12"+Chr(72), "[SIZE=8]" )  // Comprimido
+   cLinha := StrTran( cLinha, Chr(27)+Chr(40)+Chr(115)+"23"+Chr(72), "[SIZE=14]" ) // Expandido
+   cLinha := StrTran( cLinha, Chr(27)+Chr(40)+Chr(115)+Chr(51)+Chr(66), "[B]" )    // Negrito ON
+   cLinha := StrTran( cLinha, Chr(27)+Chr(40)+Chr(115)+Chr(45)+Chr(51)+Chr(66), "[/B]" ) // Negrito OFF
 
    // ====================================================================
-   // 4. COMANDOS HARDCODED: HP LASER
+   // 5. COMANDOS HARDCODED: HP LASER -> BBCODE
    // ====================================================================
-   cLinha := StrTran( cLinha, chr(27)+chr(38)+chr(107)+chr(50)+chr(83), "[SIZE=12]" ) // Normal
-   cLinha := StrTran( cLinha, chr(27)+chr(38)+chr(107)+chr(48)+chr(83), "[SIZE=8]" )  // Comprimido
-   cLinha := StrTran( cLinha, chr(27)+chr(40)+chr(115)+CHR(48)+chr(66), "[/B]" )      // Negrito OFF
+   cLinha := StrTran( cLinha, Chr(27)+Chr(38)+Chr(107)+Chr(50)+Chr(83), "[SIZE=12]" ) // Normal
+   cLinha := StrTran( cLinha, Chr(27)+Chr(38)+Chr(107)+Chr(48)+Chr(83), "[SIZE=8]" )  // Comprimido
+   cLinha := StrTran( cLinha, Chr(27)+Chr(40)+Chr(115)+Chr(48)+Chr(66), "[/B]" )      // Negrito OFF
 
    // ====================================================================
-   // 5. COMANDOS HARDCODED: LEXMARK
+   // 6. COMANDOS HARDCODED: LEXMARK -> BBCODE
    // ====================================================================
-   // Normal
-   cLinha := StrTran( cLinha, chr(27)+chr(38)+chr(107)+chr(50)+chr(83)+chr(27)+chr(38)+chr(108)+"8"+chr(68)+chr(27)+chr(38)+chr(108)+"90"+chr(80), "[SIZE=12]" )
-   // Comprimido
-   cLinha := StrTran( cLinha, chr(27)+chr(38)+chr(107)+chr(52)+chr(83)+chr(27)+chr(38)+chr(108)+"5"+chr(68)+chr(27)+chr(38)+chr(108)+"66"+chr(80), "[SIZE=8]" )
-   // Expandido
-   cLinha := StrTran( cLinha, chr(27)+chr(40)+chr(115)+"23"+chr(72)+chr(27)+chr(38)+chr(108)+"10"+chr(68)+chr(27)+chr(38)+chr(108)+"90"+chr(80), "[SIZE=14]" )
+   cLinha := StrTran( cLinha, Chr(27)+Chr(38)+Chr(107)+Chr(50)+Chr(83)+Chr(27)+Chr(38)+Chr(108)+"8"+Chr(68)+Chr(27)+Chr(38)+Chr(108)+"90"+Chr(80), "[SIZE=12]" )
+   cLinha := StrTran( cLinha, Chr(27)+Chr(38)+Chr(107)+Chr(52)+Chr(83)+Chr(27)+Chr(38)+Chr(108)+"5"+Chr(68)+Chr(27)+Chr(38)+Chr(108)+"66"+Chr(80), "[SIZE=8]" )
+   cLinha := StrTran( cLinha, Chr(27)+Chr(40)+Chr(115)+"23"+Chr(72)+Chr(27)+Chr(38)+Chr(108)+"10"+Chr(68)+Chr(27)+Chr(38)+Chr(108)+"90"+Chr(80), "[SIZE=14]" )
 
    // ====================================================================
-   // 6. ESTRUTURA GERAL
+   // 7. SALTO DE PÁGINA (FORM FEED)
    // ====================================================================
-   // Salto de Pagina (Form Feed)
-   cLinha := StrTran( cLinha, Chr(12), "[PAGE]" )              
+   cLinha := StrTran( cLinha, Chr(12), "[PAGE]" )
 
 RETURN cLinha
