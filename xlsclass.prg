@@ -78,7 +78,6 @@ METHOD NewStyle( nFont, nBorder, nFill, nVA, nHA, nFormat, nRotation, lWrap ) CL
    AAdd( ::aStyles, {nFont, nBorder, nFill, nVA, nHA, nFormat, nRotation, lWrap} )
 Return Len( ::aStyles )
 
-
 METHOD WorkSheet( cName ) CLASS WorkBookXLSX
    LOCAL oWorkSheet, nPos 
    IF ( nPos := AScan( ::aWorkSheetNames, cName ) ) == 0
@@ -98,7 +97,8 @@ METHOD Save() CLASS WorkBookXLSX
    LOCAL cContentTypes, cRels, cWorkbookRels, cWorkbook, cSheetXml
    LOCAL nI, nJ, nK, aData, eValor
    LOCAL cFinalZip := ::cFilePath + ::cName
-   LOCAL cColName
+   LOCAL cColName, cSheetNameEscaped
+   LOCAL lZipOk := .T.
 
    MakeDir( ::cTempDir + cSep + "_rels" )
    MakeDir( ::cTempDir + cSep + "xl" )
@@ -134,18 +134,21 @@ METHOD Save() CLASS WorkBookXLSX
    cWorkbookRels += '</Relationships>'
    hb_MemoWrit( ::cTempDir + cSep + "xl" + cSep + "_rels" + cSep + "workbook.xml.rels", cWorkbookRels )
 
-   // 4. xl/workbook.xml
+   // 4. xl/workbook.xml com Escape Seguro
    cWorkbook := '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + hb_osNewLine() + ;
                 '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' + hb_osNewLine() + ;
                 ' <sheets>' + hb_osNewLine()
    FOR nI := 1 TO Len( ::aWorkSheetNames )
-      cWorkbook += '  <sheet name="' + ::aWorkSheetNames[nI] + '" sheetId="' + hb_ValToStr(nI) + '" r:id="rId' + hb_ValToStr(nI) + '"/>' + hb_osNewLine()
+      cSheetNameEscaped := StrTran( ::aWorkSheetNames[nI], "&", "&amp;" )
+      cSheetNameEscaped := StrTran( cSheetNameEscaped, "<", "&lt;" )
+      cSheetNameEscaped := StrTran( cSheetNameEscaped, ">", "&gt;" )
+      
+      cWorkbook += '  <sheet name="' + cSheetNameEscaped + '" sheetId="' + hb_ValToStr(nI) + '" r:id="rId' + hb_ValToStr(nI) + '"/>' + hb_osNewLine()
    NEXT
-   cWorkbook += ' </sheets>' + hb_osNewLine() + ;
-                '</workbook>'
+   cWorkbook += ' </sheets>' + hb_osNewLine() + '</workbook>'
    hb_MemoWrit( ::cTempDir + cSep + "xl" + cSep + "workbook.xml", cWorkbook )
 
-   // 5. Gera cada worksheet em xl/worksheets/sheetN.xml
+   // 5. Gera cada worksheet
    FOR nI := 1 TO Len( ::aWorkSheetNames )
       cSheetXml := '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' + hb_osNewLine() + ;
                    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' + hb_osNewLine() + ;
@@ -185,26 +188,32 @@ METHOD Save() CLASS WorkBookXLSX
       hb_MemoWrit( ::cTempDir + cSep + "xl" + cSep + "worksheets" + cSep + "sheet" + hb_ValToStr(nI) + ".xml", cSheetXml )
    NEXT
 
-   // 6. Compactação do pacote ZIP final (.xlsx)
+   // 6. Compactação Transacional do ZIP
    IF File( cFinalZip ); FErase( cFinalZip ); ENDIF
    
    hZip := hb_zipOpen( cFinalZip )
    If !Empty( hZip )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "[Content_Types].xml", "[Content_Types].xml", 8, .T. )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "_rels" + cSep + ".rels", "_rels/.rels", 8, .T. )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "xl" + cSep + "_rels" + cSep + "workbook.xml.rels", "xl/_rels/workbook.xml.rels", 8, .T. )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "xl" + cSep + "workbook.xml", "xl/workbook.xml", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "[Content_Types].xml", "[Content_Types].xml", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "_rels" + cSep + ".rels", "_rels/.rels", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "xl" + cSep + "_rels" + cSep + "workbook.xml.rels", "xl/_rels/workbook.xml.rels", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "xl" + cSep + "workbook.xml", "xl/workbook.xml", 8, .T. )
       
       FOR nI := 1 TO Len( ::aWorkSheetNames )
-         hb_zipStoreFile( hZip, ::cTempDir + cSep + "xl" + cSep + "worksheets" + cSep + "sheet" + hb_ValToStr(nI) + ".xml", "xl/worksheets/sheet" + hb_ValToStr(nI) + ".xml", 8, .T. )
+         lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "xl" + cSep + "worksheets" + cSep + "sheet" + hb_ValToStr(nI) + ".xml", "xl/worksheets/sheet" + hb_ValToStr(nI) + ".xml", 8, .T. )
       NEXT
       
       hb_zipClose( hZip )
+   ELSE
+      lZipOk := .F.
    ENDIF
 
-   hb_DirRemoveAll( ::cTempDir )
-Return Self
+   IF lZipOk
+      hb_DirRemoveAll( ::cTempDir )
+   ELSE
+      ALERTX("Falha ao gravar pacote: " + cFinalZip)
+   ENDIF
 
+Return Self
 
 CLASS WorkSheetXLSX
    DATA cName
@@ -257,6 +266,11 @@ METHOD Cell( uAddr, xValue, nStyle ) CLASS WorkSheetXLSX
       XlsxCellRC( uAddr, @nRow, @nCol )
    ENDIF
 
+   // Validação Rigorosa
+   IF nRow <= 0 .OR. nCol <= 0
+      RETURN NIL
+   ENDIF
+
    ::nMaxCol := iif( nCol > ::nMaxCol, nCol, ::nMaxCol )
    ::nMaxRow := iif( nRow > ::nMaxRow, nRow, ::nMaxRow )
 
@@ -277,7 +291,6 @@ METHOD Cell( uAddr, xValue, nStyle ) CLASS WorkSheetXLSX
    ENDIF
    
 Return ::aData[nRow, nCol]
-
 
 STATIC FUNCTION XlsxCellRC( cAddr, nRow, nCol )
    LOCAL nI := 1, nLen := Len( cAddr ), cChar

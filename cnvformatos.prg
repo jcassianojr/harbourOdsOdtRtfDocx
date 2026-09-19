@@ -75,11 +75,12 @@ RETURN fileconvert(cFILE,"TXTWIN")
 *+
 *+
 function fileconvert(cFILE,cTIPO)
-
+local nHANDLE, nHANWRI, cVAR
 local x
 nHANDLE := hb_fopen(cFILE)
 if nHANDLE = 0
    ALERTX("Arquivo nao Pode ser Aberto")
+   return "erro.txt"
 endif
 cFILE := substr(cFILE,1,at(".",cFILE) - 1)
 if cTIPO = "HTML"
@@ -94,6 +95,7 @@ endif
 nHANWRI := fcreate(cFILE,0)
 if nHANWRI = - 1
    ALERTX("Arquivo nao Pode ser Criado"+cFILE)
+   fclose(nHANDLE) // Garante o fechamento do arquivo de leitura
    return "erro.txt"
 endif
 if cTIPO = "HTML"

@@ -20,7 +20,6 @@ CLASS DocumentODT
    METHOD AddParagraph( cText )
    METHOD Save()
    
-   // Novo metodo interno para processamento seguro do XML
    METHOD ParseBBCodeToXML( cLinha ) PROTECTED
 ENDCLASS
 
@@ -55,6 +54,7 @@ METHOD Save() CLASS DocumentODT
    LOCAL cManifest, cContent, cMime
    LOCAL nI, eValor, cType, cParStyle
    LOCAL cFinalZip := ::cFilePath + ::cName
+   LOCAL lZipOk := .T.
 
    MakeDir( ::cTempDir + cSep + "META-INF" )
 
@@ -91,18 +91,15 @@ METHOD Save() CLASS DocumentODT
       eValor    := hb_ValToStr(::aContent[nI, 3])
       cParStyle := ""
       
-      // 1. Limpeza OBRIGATORIA de strings para XML antes de processar o BBCode
       eValor := StrTran( eValor, "&", "&amp;" )
       eValor := StrTran( eValor, "<", "&lt;" )
       eValor := StrTran( eValor, ">", "&gt;" )
 
-      // 2. Verifica se ha comando de Salto de Pagina na linha
       IF "[PAGE]" $ eValor
          cParStyle := ' text:style-name="P_PageBreak"'
-         eValor := StrTran( eValor, "[PAGE]", "" ) // Limpa a tag para nao imprimir
+         eValor := StrTran( eValor, "[PAGE]", "" )
       ENDIF
 
-      // 3. Traduz formatações inline de forma segura
       eValor := ::ParseBBCodeToXML( eValor )
 
       IF cType == "H" 
@@ -121,13 +118,19 @@ METHOD Save() CLASS DocumentODT
    IF File( cFinalZip ); FErase( cFinalZip ); ENDIF
    hZip := hb_zipOpen( cFinalZip )
    IF !Empty( hZip )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "mimetype", "mimetype", 0, .T. )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "content.xml", "content.xml", 8, .T. )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "META-INF" + cSep + "manifest.xml", "META-INF/manifest.xml", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "mimetype", "mimetype", 0, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "content.xml", "content.xml", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "META-INF" + cSep + "manifest.xml", "META-INF/manifest.xml", 8, .T. )
       hb_zipClose( hZip )
+   ELSE
+      lZipOk := .F.
    ENDIF
 
-   hb_DirRemoveAll( ::cTempDir )
+   IF lZipOk
+      hb_DirRemoveAll( ::cTempDir )
+   ELSE
+      ALERTX("Falha ao gravar pacote: " + cFinalZip)
+   ENDIF
 Return Self
 
 // ---------------------------------------------------------
@@ -137,6 +140,7 @@ METHOD ParseBBCodeToXML( cLinha ) CLASS DocumentODT
    LOCAL cResult := ""
    LOCAL nPosIni, nPosFim, cTag, cCmd
    LOCAL nSizeOpen := 0, nBoldOpen := 0, nItalicOpen := 0, nUnderOpen := 0
+   LOCAL cTamanhoFonte 
 
    WHILE !Empty( cLinha )
       nPosIni := At( "[", cLinha )
@@ -176,12 +180,18 @@ METHOD ParseBBCodeToXML( cLinha ) CLASS DocumentODT
                      nUnderOpen--
                   ENDIF
                CASE Left( cCmd, 5 ) == "SIZE="
-                  // Se ja havia um tamanho aberto, fecha antes de abrir o proximo (Evita tag aninhada)
                   IF nSizeOpen > 0
                      cResult += '</text:span>' 
                      nSizeOpen--
                   ENDIF
-                  cResult += '<text:span text:style-name="T_S' + SubStr( cCmd, 6 ) + '">'
+                  
+                  // Validação rigorosa do tamanho da fonte suportado no ODT
+                  cTamanhoFonte := SubStr( cCmd, 6 )
+                  IF !( cTamanhoFonte $ "8|12|14" )
+                     cTamanhoFonte := "12" // Fallback para tamanho padrão seguro
+                  ENDIF
+                  
+                  cResult += '<text:span text:style-name="T_S' + cTamanhoFonte + '">'
                   nSizeOpen++
                CASE Left( cCmd, 6 ) == "/SIZE"
                   IF nSizeOpen > 0
@@ -201,7 +211,7 @@ METHOD ParseBBCodeToXML( cLinha ) CLASS DocumentODT
       ENDIF
    ENDDO
 
-   // Protecao Contra Corrupcao de ODT: Fecha compulsoriamente tags orfãs no fim da linha
+   // Protecao Contra Corrupcao de ODT
    WHILE nBoldOpen > 0;   cResult += '</text:span>'; nBoldOpen--;   ENDDO
    WHILE nItalicOpen > 0; cResult += '</text:span>'; nItalicOpen--; ENDDO
    WHILE nUnderOpen > 0;  cResult += '</text:span>'; nUnderOpen--;  ENDDO

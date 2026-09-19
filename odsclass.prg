@@ -57,7 +57,6 @@ METHOD New( cName ) CLASS WorkBookODS
    MakeDir( ::cTempDir )
 Return Self
 
-// --- Implementação dos Stubs de Estilo (Retornam IDs falsos para compatibilidade) ---
 METHOD NewFormat( cFormat ) CLASS WorkBookODS
    AAdd( ::aNumFormats, cFormat )
 Return Len( ::aNumFormats )
@@ -78,7 +77,6 @@ METHOD NewStyle( nFont, nBorder, nFill, nVA, nHA, nFormat, nRotation, lWrap ) CL
    AAdd( ::aStyles, {nFont, nBorder, nFill, nVA, nHA, nFormat, nRotation, lWrap} )
 Return Len( ::aStyles )
 
-
 METHOD WorkSheet( cName ) CLASS WorkBookODS
    LOCAL oWorkSheet, nPos 
    IF ( nPos := AScan( ::aWorkSheetNames, cName ) ) == 0
@@ -98,6 +96,8 @@ METHOD Save() CLASS WorkBookODS
    LOCAL cManifest, cContent, cMime
    LOCAL nI, nJ, nK, aData, eValor
    LOCAL cFinalZip := ::cFilePath + ::cName
+   LOCAL cSheetNameEscaped
+   LOCAL lZipOk := .T.
 
    MakeDir( ::cTempDir + cSep + "META-INF" )
 
@@ -119,7 +119,11 @@ METHOD Save() CLASS WorkBookODS
                '  <office:spreadsheet>' + hb_osNewLine()
 
    FOR nI := 1 TO Len( ::aWorkSheetNames )
-      cContent += '   <table:table table:name="' + ::aWorkSheetNames[nI] + '">' + hb_osNewLine()
+      cSheetNameEscaped := StrTran( ::aWorkSheetNames[nI], "&", "&amp;" )
+      cSheetNameEscaped := StrTran( cSheetNameEscaped, "<", "&lt;" )
+      cSheetNameEscaped := StrTran( cSheetNameEscaped, ">", "&gt;" )
+      
+      cContent += '   <table:table table:name="' + cSheetNameEscaped + '">' + hb_osNewLine()
       
       aData := ::aWorkSheetObjects[nI]:aData
       FOR nJ := 1 TO Len( aData )
@@ -160,13 +164,19 @@ METHOD Save() CLASS WorkBookODS
    
    hZip := hb_zipOpen( cFinalZip )
    IF !Empty( hZip )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "mimetype", "mimetype", 0, .T. )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "content.xml", "content.xml", 8, .T. )
-      hb_zipStoreFile( hZip, ::cTempDir + cSep + "META-INF" + cSep + "manifest.xml", "META-INF/manifest.xml", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "mimetype", "mimetype", 0, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "content.xml", "content.xml", 8, .T. )
+      lZipOk := lZipOk .AND. hb_zipStoreFile( hZip, ::cTempDir + cSep + "META-INF" + cSep + "manifest.xml", "META-INF/manifest.xml", 8, .T. )
       hb_zipClose( hZip )
+   ELSE
+      lZipOk := .F.
    ENDIF
 
-   hb_DirRemoveAll( ::cTempDir )
+   IF lZipOk
+      hb_DirRemoveAll( ::cTempDir )
+   ELSE
+      ALERTX("Falha ao gravar pacote: " + cFinalZip)
+   ENDIF
 Return Self
 
 
@@ -199,7 +209,6 @@ METHOD New( cName ) CLASS WorkSheetODS
    ::nMaxCol := 0
 Return Self
 
-// --- Método de Compatibilidade para detalhes de linha ---
 METHOD RowDetail( nRow, nHeight, nStyle, lHide ) CLASS WorkSheetODS
    LOCAL nI
    IF hb_IsNumeric( nRow )
@@ -212,7 +221,6 @@ METHOD RowDetail( nRow, nHeight, nStyle, lHide ) CLASS WorkSheetODS
    ENDIF
 RETURN Self
 
-// O nStyle foi adicionado na assinatura por compatibilidade
 METHOD Cell( uAddr, xValue, nStyle ) CLASS WorkSheetODS
    LOCAL nRow := 0, nCol := 0, nI
    
@@ -221,6 +229,11 @@ METHOD Cell( uAddr, xValue, nStyle ) CLASS WorkSheetODS
       nCol := uAddr[2]
    ELSE
       OdsCellRC( uAddr, @nRow, @nCol )
+   ENDIF
+
+   // Validação Rigorosa
+   IF nRow <= 0 .OR. nCol <= 0
+      RETURN NIL 
    ENDIF
 
    ::nMaxCol := iif( nCol > ::nMaxCol, nCol, ::nMaxCol )
@@ -243,7 +256,6 @@ METHOD Cell( uAddr, xValue, nStyle ) CLASS WorkSheetODS
    ENDIF
    
 Return ::aData[nRow, nCol]
-
 
 STATIC FUNCTION OdsCellRC( cAddr, nRow, nCol )
    LOCAL nI := 1, nLen := Len( cAddr ), cChar
